@@ -1,0 +1,116 @@
+# Per-repository settings for the standard README footer.
+# Keys left out of a repository fall back to [defaults].
+
+[defaults]
+sdk = "built"      # "built": builds with the SDK; "thanks": does not
+releases = false   # true: binary releases come from this repository's tags
+risk = true        # include the "use at your own risk" bullet
+trademarks = ""    # extra sentence appended to the affiliation bullet
+license_extra = "" # extra sentence appended to the license paragraph
+license = ""       # replaces the whole license paragraph when set
+gpl = true         # the project is GPL: cite its warranty sections
+
+[text]
+built = "Built with the [PS5 Payload SDK](https://github.com/ps5-payload-dev/sdk) by John Törnblom (ps5-payload-dev)."
+thanks = "Thanks to John Törnblom (ps5-payload-dev) for the [PS5 Payload SDK](https://github.com/ps5-payload-dev/sdk), which much of the PS5 homebrew scene is built on."
+license = "Copyright © 2026 BlackBearReloaded. Licensed under GPL-3.0-or-later; see [LICENSE](LICENSE). Third-party components keep their own licenses."
+gpl_ref = " See sections 15 and 16 of the GPL."
+releases = "Binary releases are built from the tagged source in this repository."
+risk = """
+
+- **Use at your own risk.** Running homebrew requires a modified console, which
+  may void its warranty, breach the platform's terms of service, or cause data
+  loss."""
+
+[repos.PS5_Mesa]
+gpl = false
+license = "Mesa is distributed under its own licenses, mainly MIT; see [docs/license.rst](docs/license.rst) and [licenses/](licenses). The files this fork adds are Copyright © 2026 BlackBearReloaded and MIT-licensed, like the code around them."
+trademarks = " Vulkan is a registered trademark of the Khronos Group Inc."
+
+[repos.ProsperoAI]
+trademarks = " Model names belong to their authors, who do not endorse this project."
+
+[repos.ProsperoChess]
+trademarks = " This project is not affiliated with or endorsed by Lichess."
+
+[repos.ProsperoEden]
+releases = true
+trademarks = " This project is not affiliated with or endorsed by the Eden project."
+
+[repos.ProsperoLight]
+releases = true
+trademarks = " This project is not affiliated with or endorsed by the Moonlight or Sunshine projects."
+
+[repos.ProsperoPuzzles]
+releases = true
+trademarks = " This project is not affiliated with or endorsed by Simon Tatham."
+
+[repos.ProsperoRadio]
+releases = true
+trademarks = " This project is not affiliated with or endorsed by Radio Browser."
+
+[repos.ProsperoTV]
+releases = true
+trademarks = " This project is not affiliated with or endorsed by iptv-org."
+
+[repos."blackbearreloaded.github.io"]
+sdk = "thanks"
+risk = false
+
+[repos.ps5-agent-runbook]
+sdk = "thanks"
+
+[repos.ps5-app-cleaner]
+releases = true
+
+[repos.ps5-at9-converter]
+sdk = "thanks"
+releases = true
+risk = false
+trademarks = " ATRAC9 is a trademark of Sony Group Corporation."
+
+[repos.ps5-audio-decoding-research]
+
+[repos.ps5-fsr4]
+releases = true
+trademarks = " AMD, FidelityFX and FSR are trademarks of Advanced Micro Devices, Inc., which does not endorse this project."
+
+[repos.ps5-gpu-research]
+sdk = "thanks"
+trademarks = " OpenGL is a registered trademark of Hewlett Packard Enterprise, used by permission by Khronos. Vulkan is a registered trademark of the Khronos Group Inc."
+
+[repos.ps5-hardware-video-decoding-research]
+sdk = "thanks"
+
+[repos.ps5-homebrew-catalog]
+sdk = "thanks"
+risk = false
+license_extra = "Each listed app is distributed by its own developer under the license in its record."
+
+[repos.ps5-homebrew-dev-protocol]
+
+[repos.ps5-native-app-boilerplate]
+releases = true
+
+[repos.ps5-native-gamepad-input-research]
+sdk = "thanks"
+trademarks = " DualSense is a trademark of Sony Interactive Entertainment Inc."
+
+[repos.ps5-opengl]
+releases = true
+trademarks = " OpenGL is a registered trademark of Hewlett Packard Enterprise, used by permission by Khronos. This project is not affiliated with or endorsed by The Khronos Group."
+
+[repos.ps5-python]
+releases = true
+trademarks = " Python is a registered trademark of the Python Software Foundation."
+
+[repos.ps5-rsync]
+releases = true
+
+[repos.ps5-vulkan]
+license_extra = "Applications distributed with the static `libps5vk.a` must provide the corresponding source under GPL-compatible terms. Upstream licensing and source provenance are documented in [LICENSING.md](LICENSING.md)."
+trademarks = " Vulkan is a registered trademark of the Khronos Group Inc."
+
+[repos.ps5-yamagi-quake2]
+releases = true
+trademarks = " Quake is a trademark of ZeniMax Media Inc. This project is not affiliated with or endorsed by id Software, Bethesda or the Yamagi Quake II project."

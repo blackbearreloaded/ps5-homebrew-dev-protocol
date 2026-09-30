@@ -1,0 +1,10 @@
+#EXTM3U
+# Replace HOST_IP with the development PC address visible to the console.
+#EXTINF:-1 tvg-id="controlled.h264" group-title="Controlled",Controlled H.264 HLS
+http://HOST_IP:8088/h264-hls/index.m3u8
+#EXTINF:-1 tvg-id="controlled.hevc" group-title="Controlled",Controlled HEVC HLS
+http://HOST_IP:8088/hevc-hls/index.m3u8
+#EXTINF:-1 tvg-id="controlled.h264.direct" group-title="Controlled",Controlled H.264 MPEG-TS
+http://HOST_IP:8088/h264-1080p60-aac.ts
+#EXTINF:-1 tvg-id="controlled.hevc.direct" group-title="Controlled",Controlled HEVC MPEG-TS
+http://HOST_IP:8088/hevc-main8-1080p60-aac.ts

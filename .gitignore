@@ -1,0 +1,23 @@
+.local/
+results/*
+!results/README.md
+
+# Generated acceptance media and host-specific manifests
+examples/iptv/fixtures/**/*.ts
+examples/iptv/fixtures/**/*.m3u8
+examples/iptv/fixtures/*.ffconcat
+examples/iptv/fixtures/controlled-index.m3u
+examples/iptv/fixtures/iptv-autotest.txt
+
+# Build and editor output
+build/
+out/
+dist/
+*.elf
+*.bin
+*.prx
+*.ffpkg
+*.ffpfsc
+*.log
+.DS_Store
+Thumbs.db
