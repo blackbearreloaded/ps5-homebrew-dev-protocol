@@ -30,12 +30,13 @@ trademarks = " Vulkan is a registered trademark of the Khronos Group Inc."
 [repos.ProsperoAI]
 trademarks = " Model names belong to their authors, who do not endorse this project."
 
-[repos.ProsperoChess]
-trademarks = " This project is not affiliated with or endorsed by Lichess."
-
 [repos.ProsperoEden]
 releases = true
 trademarks = " This project is not affiliated with or endorsed by the Eden project."
+
+[repos.ProsperoLichess]
+license_extra = "The source code is coming soon."
+trademarks = " This project is not affiliated with or endorsed by Lichess."
 
 [repos.ProsperoLight]
 releases = true
