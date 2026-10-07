@@ -29,9 +29,15 @@ package. A rebuild, resign, repack, or metadata edit creates a new candidate.
 For cross-firmware claims, deploy the same frozen bytes everywhere and test the
 safer console first.
 
+Freeze the built folder as a candidate (`scripts/freeze-candidate.sh`) and install
+the copy: a rebuild must never change what a queued cycle uploads.
+
 Do not hold a PS5 lock during offline work.
 
 ## 3. Run one console cycle
+
+From WSL or Linux, `scripts/ps5-cycle.sh` runs these steps as one command;
+[FAST_CYCLES.md](FAST_CYCLES.md) explains how to get the most from each launch.
 
 1. **Lock:** For shared consoles, atomically create the environment's lock with
    a unique token. If it exists, wait 15 seconds and retry. Never infer that a
@@ -43,10 +49,12 @@ Do not hold a PS5 lock during offline work.
 3. **Deploy:** Upload under a temporary name, promote only after transfer,
    verify remote bytes or the immutable image hash, and wait for
    title-specific ShadowMount readiness. Do not launch on a hash mismatch or
-   ambiguous registration.
+   ambiguous registration. After an upload, and after any unexpected console
+   restart, wait about two minutes and compare the install again: a console can
+   come back from a crash with the last files written as zero bytes.
 4. **Observe:** Save klog to a file before launching the exact title. Run once
    for a bounded period. Capture only evidence required by the criterion:
-   ShadowMount lifecycle, app receipt, screenshot, audio, or declared debugger
+   ShadowMount lifecycle, the app's own log, or a declared debugger
    snapshot.
 5. **Close:** Prefer an app-initiated exit, then send the title-aware close
    controller ([CONTROLLERS.md](CONTROLLERS.md)) as a safety net. Require a
@@ -98,7 +106,9 @@ Use exactly one state:
 Retry identical bytes once only for a proven transport or stale-registration
 failure. Do not chain unattended cycles; check service health between runs and
 stop at the first anomaly. After a suspected kernel panic, preserve evidence
-and analyze offline; do not automatically rerun. If environment health is uncertain, run a
+and analyze offline; do not automatically rerun. A refused connection means the
+console restarted and its services are not loaded; a timeout means it is off
+or unreachable. Neither is retried. If environment health is uncertain, run a
 distributable known-good control before blaming the candidate.
 
 For diagnosis, escalate only as needed: host inspection → app checkpoints →

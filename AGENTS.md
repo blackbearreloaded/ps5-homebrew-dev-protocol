@@ -11,8 +11,8 @@
 | Need | Read |
 | --- | --- |
 | Launch or close a title | [docs/CONTROLLERS.md](docs/CONTROLLERS.md) |
+| More than one console run ahead | [docs/FAST_CYCLES.md](docs/FAST_CYCLES.md) |
 | Ports, debuggers, or helper scripts | [docs/TOOLS.md](docs/TOOLS.md) |
-| Remote Play, input, screenshots, or audio | [docs/CHIAKI_INPUT.md](docs/CHIAKI_INPUT.md) |
 | A new project | [docs/PROJECT_PLAN_TEMPLATE.md](docs/PROJECT_PLAN_TEMPLATE.md) |
 | Continuing another agent's work | [docs/HANDOFF_TEMPLATE.md](docs/HANDOFF_TEMPLATE.md) |
 
@@ -27,4 +27,7 @@
 - Acquire the environment lock only during a bounded shared-console case.
 - Commit the exact candidate before hardware testing and every proven
   milestone.
+- Freeze the built folder before a cycle and run the cycle as one script file
+  (`scripts/ps5-cycle.sh`); never rebuild a folder a queued cycle will read.
+- A console that stops answering ends the session: no retry. Report what ran.
 - Never commit hosts, credentials, personal paths, or raw evidence.
