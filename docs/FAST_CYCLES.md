@@ -19,6 +19,14 @@ a slow build.
 - **Script the model.** Drive the app's state machine on the PC with a pretend network or
   device and assert the outcomes. Hardware is for what only hardware has: the loader, the
   decoder, the display, timing.
+- **Stand in for the far side with a file.** A feature that waits on something remote (a
+  newer release to update to, a server's answer, a catalog entry) is slow to test against
+  the real thing. Let a development build read the same answer from a small file in its
+  data folder when one is there: `ps5-console.py put` sends it, each state takes one
+  launch, and the real service is needed only for the final run.
+- **Test input handling as a function.** Feed recorded controller samples to the code that
+  turns them into the app's buttons, sticks and motion, and assert what comes out. A
+  mapping, a rotation or a dead zone is then proven before anyone holds a controller.
 
 ## 2. Freeze what you are going to run
 
@@ -68,7 +76,27 @@ another shell (PowerShell to WSL, SSH) lose their quoting in ways that are slow 
 Run a long cycle in the background and read its output when it ends; do not poll it.
 
 `PS5_LAUNCH=0` installs and verifies without launching. That is enough when a person is
-going to test by hand, and it needs no launch from you at all.
+going to test by hand, and it needs no launch from you at all. It needs no lock either
+when the title is closed: nothing is launched or closed, and the install refuses a title
+that is running.
+
+- **Wait for a line, not for a time.** Name a log the app writes and what it says when it is
+  ready (`PS5_READY_LOG`, `PS5_READY_PATTERN`): the cycle goes on the moment a new line
+  matches and fails by itself when none does. A fixed wait is either too long every time
+  or too short once. Without a log, the cycle still notices a title that ended early.
+- **The kernel log is recorded for you.** The cycle saves it for the length of the run
+  (`klog.txt` in the evidence folder) and says how many lines name the title. A crash is
+  written there and often nowhere else.
+- **Evidence survives a failed run.** When the launch goes wrong the cycle still fetches the
+  logs and the error record before it stops: those are the logs worth reading.
+- **Nothing is launched over another title.** A title someone else left running is their
+  session. The cycle lists what is running (`ps5-console.py titles`) and stops before the
+  install when it is not alone.
+- **Shell paths between Windows and WSL.** From Git Bash, a `/mnt/c/...` argument is
+  rewritten into a Windows path before WSL sees it; set `MSYS_NO_PATHCONV=1` for that
+  command or call it from PowerShell. Never stop a background helper by a name pattern
+  (`pkill -f`): the pattern also matches the shell running the command. Keep its process
+  ID and stop that.
 
 ## 4. Verify the install twice
 
@@ -84,6 +112,21 @@ going to test by hand, and it needs no launch from you at all.
   Hold the lock through that wait.
 - **After any unexpected restart, verify the install before the next launch**, even if
   you did not upload anything.
+- **Send the files to where the title really is.** ShadowMount Plus mounts a title from
+  whichever scan folder holds it: internal storage, a USB drive, extended storage, or an
+  image. `ps5-console.py where PPSA99999` reads the link it keeps
+  (`/user/app/<TITLE>/mount.lnk`, or `mount_img.lnk` for an image) and prints the source.
+  The install refuses to write anywhere else, and refuses an image: files sent to a folder
+  that is not mounted install nothing, and the launch then tests the old build.
+- **An app's own folder is where it is mounted, not where it was copied.** Inside the app,
+  `/app0` is gone once the app has filesystem access; the mounted copy is at
+  `/system_ex/app/<TITLE>`. Look there before any fixed folder, and an app runs from every
+  place it can be installed.
+- **Permissions are part of the install.** The console only starts an app whose files are
+  open to every user (mode 0777), which is how files arrive over FTP. A release archive
+  that stores 0644 and is unpacked with permissions kept gives "Can't start the game or
+  app" (CE-107750-0). Store 0777 in the archive, and have anything that unpacks on the
+  console set it.
 
 ## 5. Make each launch answer several questions
 
@@ -99,6 +142,25 @@ going to test by hand, and it needs no launch from you at all.
   exit holds nothing when the exit is the failure.
 - **Numbers, not impressions.** "First frame after 483 ms" compares across builds; "it
   felt slower" does not.
+- **A start-up trace that outlives the app.** Write one line per start-up step, with the
+  system software version and the build's label, to the kernel log as well as to the file,
+  from the first instruction on. When the app closes before its own log exists, the
+  kernel log still says how far it got, and a tester on another console can send it.
+- **Know where the log is in each mode.** A sandboxed app writes inside its sandbox; the
+  same app with filesystem access writes to its data folder. Log the folder at start and
+  give the cycle both paths: the one that does not exist is reported as absent.
+- **Say when a mode switches on.** Behaviour that depends on what the running content asks
+  for (a controller style, a display mode, a codec path) should log one line when it
+  engages and when it lets go. "It did nothing" and "it did the wrong thing" then read
+  differently in the log.
+- **A command file for scripted sessions.** A development build can poll a small file in
+  its data folder a few times a second and act on what it finds: press a button, open a
+  screen, save a picture, quit. With `ps5-console.py put` and `wait`, one launch walks a
+  whole screen flow, each step answered by a log line. Keep it out of release builds.
+- **Let the app take its own pictures.** On such a command the app reads back the frame it
+  has just drawn and writes it to a folder; `ps5-console.py fetch <out> /data/myapp/shots/`
+  collects them. They show what the console drew, need no capture device, and line up with
+  the log by name.
 - **Plan the reading before the launch.** Decide which lines will answer the question, put
   them in the build, and fetch only those files.
 
@@ -132,3 +194,27 @@ When the remaining question is how something looks or feels, install with `PS5_L
 say exactly what to try and what each outcome means, and let the person launch it. Ask them
 for the two facts logs cannot give: what they did just before a failure, and how they
 closed the app. Then fetch the log.
+
+- **Write the brief as steps with outcomes.** What to open, what to press, and for each
+  thing that can go wrong, what it would mean ("reversed: a sign; a quarter off: the mode
+  did not switch on, send the log"). One sitting then decides the next change.
+- **Say what you could not verify.** Motion, feel, sound and anything that needs hands are
+  unproven until a person tries them, however sound the reasoning. Name the assumption the
+  result rests on, and build it so that the likely miss is a one-line change.
+- **Ask how it behaves today first.** How the person has to hold, press or wait with the
+  current build is a measurement of the present state, and often settles a doubt before
+  the fix is installed.
+
+## 9. Help from consoles you cannot reach
+
+Reports come from system software versions and set-ups nobody on the project owns.
+
+- **Ship the trace in every build.** The start-up trace of section 5 costs nothing and turns
+  "it crashes on my console" into a file that names the step.
+- **Ask for three things:** the app's log folder, the kernel log of one start, and where the
+  app is installed (internal storage, USB, an image) with the loader and mount tool
+  versions. The last one explains more failures than the first two.
+- **Hand out a labelled diagnostic build**, not instructions to change settings. Its label in
+  the log says which build produced each report.
+- **Compare with a working console's trace line by line.** The first line that differs or is
+  missing is the place to look.

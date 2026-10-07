@@ -5,17 +5,26 @@
 """One tool for the FTP side of a console cycle. Python standard library only.
 
   ps5-console.py state   <TITLE>                     is the title running?
+  ps5-console.py titles                              every title that is running
+  ps5-console.py where   <TITLE>                     the folder or image it is mounted from
   ps5-console.py install <TITLE> <folder>            upload a frozen app folder, verified
   ps5-console.py settle  <TITLE> <folder> [seconds]  watch, then compare the install again
-  ps5-console.py fetch   <out-dir> <remote>...       save remote files (logs) locally
+  ps5-console.py put     <local-file> <remote-file>  upload one file, verified
+  ps5-console.py fetch   <out-dir> <remote>...       save remote files locally; a remote
+                                                     ending in / is a folder of files
+  ps5-console.py size    <remote-file>               its size in bytes (0 when absent)
+  ps5-console.py wait    <remote-file> <regex> [seconds] [offset]
+                                                     until a line of the file matches
   ps5-console.py errors  [count]                     the console's newest error records
 
-Nothing here launches, closes or signals a title; install refuses a running one.
-The host comes from PS5_HOST. Optional: PS5_FTP_PORT (2121), PS5_FTP_USER and
-PS5_FTP_PASSWORD (anonymous), PS5_INSTALL_ROOT (/data/homebrew).
+Nothing here launches, closes or signals a title; install refuses a running one,
+an app installed as an image, and a folder other than the one the title is mounted
+from. The host comes from PS5_HOST. Optional: PS5_FTP_PORT (2121), PS5_FTP_USER and
+PS5_FTP_PASSWORD (anonymous), PS5_INSTALL_ROOT (/data/homebrew),
+PS5_INSTALL_UNCHECKED=1 (install whatever the mount link says).
 
-Exit codes: 0 done, 1 a check failed, 2 usage, 3 the title is running (install),
-4 the console did not answer.
+Exit codes: 0 done, 1 a check failed (for wait: not seen in time), 2 usage, 3 the
+title is running (install), 4 the console did not answer.
 """
 from ftplib import FTP, all_errors, error_perm
 from pathlib import Path
@@ -81,6 +90,34 @@ def running(ftp, title):
     if sandboxes is None:
         fail("cannot list /mnt/sandbox: the title's state is unknown", 1)
     return sorted(name for name in sandboxes if name.startswith(title))
+
+
+# The system's own processes have sandboxes too (NPXS...): they are not titles.
+SANDBOX = re.compile(r"((?!NPXS)[A-Z]{4}[0-9]{5})_")
+
+
+def all_running(ftp):
+    """Every title with a sandbox: what is running now, whoever started it."""
+    sandboxes = names(ftp, "/mnt/sandbox")
+    if sandboxes is None:
+        fail("cannot list /mnt/sandbox: what is running is unknown", 1)
+    return sorted({match.group(1) for name in sandboxes if (match := SANDBOX.match(name))})
+
+
+def mounted_source(ftp, title):
+    """Where ShadowMount Plus mounted the title from, by the link it keeps beside the
+    registered app: ("image", path), ("folder", path), or None when it keeps none (not
+    mounted by it yet). A title copied to a USB drive or another scan folder is mounted
+    from there, and files sent anywhere else are not the ones that run."""
+    for kind, name in (("image", "mount_img.lnk"), ("folder", "mount.lnk")):
+        try:
+            data = readback(ftp, f"/user/app/{title}/{name}")
+        except all_errors:
+            continue
+        path = data.split(b"\0", 1)[0].decode("utf-8", "replace").strip().rstrip("/")
+        if path.startswith("/"):
+            return kind, path
+    return None
 
 
 def readback(ftp, path):
@@ -167,6 +204,19 @@ def command_state(arguments):
         print("running" if running(ftp, title) else "closed")
 
 
+def command_titles(arguments):
+    with connect() as ftp:
+        print(f"running: {' '.join(all_running(ftp)) or 'none'}")
+
+
+def command_where(arguments):
+    title = title_id(arguments[0])
+    with connect() as ftp:
+        source = mounted_source(ftp, title)
+    print(f"{source[0]} {source[1]}" if source else
+          "unknown: no mount link (not mounted by ShadowMount Plus yet)")
+
+
 def command_install(arguments):
     title, folder = title_id(arguments[0]), Path(arguments[1])
     files, critical = candidate_files(folder)
@@ -174,6 +224,14 @@ def command_install(arguments):
     with connect() as ftp:
         if running(ftp, title):
             fail(f"{title} is running; close it before replacing its files", 3)
+        source = mounted_source(ftp, title)
+        if source and os.environ.get("PS5_INSTALL_UNCHECKED") != "1":
+            if source[0] == "image":
+                fail(f"{title} is installed as an image ({source[1]}): replace the image, "
+                     f"files sent to {root} would not be the ones that run", 1)
+            if source[1] != root.rstrip("/"):
+                fail(f"{title} is mounted from {source[1]}, not {root}: "
+                     f"set PS5_INSTALL_ROOT={dirname(source[1])}", 1)
         known = set()
         uploaded = unchanged = 0
         weaker = []
@@ -285,12 +343,93 @@ def command_settle(arguments):
         fail("the installed build no longer matches the candidate: do not launch", 1)
 
 
+def command_put(arguments):
+    """One file (a control file the app reads, a test fixture), sent under a temporary
+    name, read back, then moved into place."""
+    local, remote = Path(arguments[0]), arguments[1]
+    if not local.is_file() or not remote.startswith("/") or remote.endswith("/"):
+        fail("put needs an existing local file and a full remote file path", 2)
+    data = local.read_bytes()
+    temporary = join(dirname(remote), f".{remote.rsplit('/', 1)[-1]}.upload")
+    with connect() as ftp:
+        ensure_directory(ftp, dirname(remote), set())
+        remove_if_present(ftp, temporary)
+        ftp.storbinary(f"STOR {temporary}", io.BytesIO(data), blocksize=BLOCK)
+        try:
+            label = verify(ftp, temporary, data)
+        except Exception:
+            remove_if_present(ftp, temporary)
+            raise
+        remove_if_present(ftp, remote)
+        ftp.rename(temporary, remote)
+    print(f"put {remote}: {len(data)} bytes, {label}")
+
+
+def remote_size(ftp, path):
+    """None when the file is absent: by an error, or by the -1 some servers answer."""
+    try:
+        size = ftp.size(path)
+    except all_errors:
+        return None
+    return size if size is not None and 0 <= size < 1 << 62 else None
+
+
+def command_size(arguments):
+    with connect() as ftp:
+        print(remote_size(ftp, arguments[0]) or 0)
+
+
+def command_wait(arguments):
+    """Returns as soon as a line of a remote text file matches, instead of sleeping a
+    fixed time. Only bytes after `offset` count (the file's size before the launch, so
+    a line of the previous run does not answer); a file that got shorter is a new one."""
+    remote, pattern = arguments[0], re.compile(arguments[1].encode())
+    window = int(arguments[2]) if len(arguments) > 2 else 60
+    offset = int(arguments[3]) if len(arguments) > 3 else 0
+    start = time.time()
+    tail = b""
+    with connect() as ftp:
+        while True:
+            size = remote_size(ftp, remote)
+            if size is not None and size < offset:
+                offset, tail = 0, b""
+            if size is not None and size > offset:
+                sink = io.BytesIO()
+                try:
+                    ftp.retrbinary(f"RETR {remote}", sink.write, blocksize=BLOCK, rest=offset or None)
+                    new = sink.getvalue()
+                except all_errors:
+                    new = readback(ftp, remote)[offset:]  # a server without REST
+                offset += len(new)
+                lines = (tail + new).split(b"\n")
+                tail = lines.pop()
+                for line in lines + ([tail] if time.time() - start >= window else []):
+                    if pattern.search(line):
+                        print(f"seen after {time.time() - start:.0f} s: "
+                              f"{line.decode('utf-8', 'replace').strip()[:200]}")
+                        return
+            if time.time() - start >= window:
+                fail(f"not seen within {window} s in {remote}: {arguments[1]}", 1)
+            time.sleep(2)
+
+
 def command_fetch(arguments):
-    """Saves each remote file that exists; a missing one is reported, not an error."""
+    """Saves each remote file that exists; a missing one is reported, not an error.
+    A remote that ends in / is a folder: its files (not its folders) are saved."""
     out = Path(arguments[0])
     out.mkdir(parents=True, exist_ok=True)
     with connect() as ftp:
+        remotes = []
         for remote in arguments[1:]:
+            if remote.endswith("/") and len(remote) > 1:
+                entries = names(ftp, remote.rstrip("/"))
+                if entries is None:
+                    print(f"absent {remote}")
+                remotes += [remote + name for name, facts in sorted((entries or {}).items())
+                            if facts.get("type") == "file"]
+            else:
+                remotes.append(remote)
+        for remote in remotes:
             target = out / remote.strip("/").replace("/", "_")
             try:
                 with open(target, "wb") as sink:
@@ -314,9 +453,11 @@ def command_errors(arguments):
           f"{' '.join(f'{name}@{stamp}' for stamp, name in records[:count]) or 'none'}")
 
 
-COMMANDS = {"state": (command_state, 1), "install": (command_install, 2),
-            "settle": (command_settle, 2), "fetch": (command_fetch, 2),
-            "errors": (command_errors, 0)}
+COMMANDS = {"state": (command_state, 1), "titles": (command_titles, 0),
+            "where": (command_where, 1), "install": (command_install, 2),
+            "settle": (command_settle, 2), "put": (command_put, 2),
+            "fetch": (command_fetch, 2), "size": (command_size, 1),
+            "wait": (command_wait, 2), "errors": (command_errors, 0)}
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS or \

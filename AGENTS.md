@@ -29,5 +29,8 @@
   milestone.
 - Freeze the built folder before a cycle and run the cycle as one script file
   (`scripts/ps5-cycle.sh`); never rebuild a folder a queued cycle will read.
+- Never launch over, or close, a title someone else left running.
+- Say what a run could not verify (feel, motion, sound): hand it to a person
+  with steps and what each outcome means.
 - A console that stops answering ends the session: no retry. Report what ran.
 - Never commit hosts, credentials, personal paths, or raw evidence.

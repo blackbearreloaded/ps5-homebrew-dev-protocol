@@ -45,15 +45,17 @@ From WSL or Linux, `scripts/ps5-cycle.sh` runs these steps as one command;
    `.local/ENVIRONMENT.md`.
 2. **Preflight:** Probe only declared services. Normally require FTP `2121`,
    klog `3232`, and elfldr/shsrv `9021`. Establish an idle state and close only
-   the exact prior title or dialog.
+   the exact prior title or dialog. If another title is running, it is someone's
+   session: do not launch over it and do not close it.
 3. **Deploy:** Upload under a temporary name, promote only after transfer,
    verify remote bytes or the immutable image hash, and wait for
-   title-specific ShadowMount readiness. Do not launch on a hash mismatch or
-   ambiguous registration. After an upload, and after any unexpected console
+   title-specific ShadowMount readiness. Install into the folder the title is
+   mounted from (`ps5-console.py where`), which is not always the default one.
+   Do not launch on a hash mismatch or ambiguous registration. After an upload, and after any unexpected console
    restart, wait about two minutes and compare the install again: a console can
    come back from a crash with the last files written as zero bytes.
 4. **Observe:** Save klog to a file before launching the exact title. Run once
-   for a bounded period. Capture only evidence required by the criterion:
+   for a bounded period, ended by the app's own ready line where it has one. Capture only evidence required by the criterion:
    ShadowMount lifecycle, the app's own log, or a declared debugger
    snapshot.
 5. **Close:** Prefer an app-initiated exit, then send the title-aware close
@@ -62,6 +64,9 @@ From WSL or Linux, `scripts/ps5-cycle.sh` runs these steps as one command;
    declared services remain healthy.
 6. **Unlock:** Remove the lock in `finally` only when its contents still match
    your token. Release it before analysis, editing, or rebuilding.
+
+Replacing the files of a closed title, with nothing launched or closed, is not a
+console cycle and needs no lock; the install refuses a title that is running.
 
 The console boundary is absolute: never enter Settings, change configuration,
 approve an update, start undeclared payloads, kill guessed processes, or send
