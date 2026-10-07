@@ -82,8 +82,12 @@ and a person's eyes answer the same questions without it
        /data/shadowmount/debug.log
    ```
 
-3. Read the lines it prints (state before and after, install and settle checks,
-   error records) and the logs it saved under `results/`.
+3. Read the lines it prints (state before and after, where the title is mounted
+   from, install and settle checks, error records) and what it saved under
+   `results/`: the logs you named and the kernel log of the run.
+
+To end the wait when the app says it is ready instead of after a fixed time, name
+its log and the line: `PS5_READY_LOG=/data/myapp/logs/app.log PS5_READY_PATTERN='menu ready'`.
 
 `PS5_LAUNCH=0` installs and verifies without launching; the other switches are
 listed at the top of the script and in [Tools](docs/TOOLS.md).
