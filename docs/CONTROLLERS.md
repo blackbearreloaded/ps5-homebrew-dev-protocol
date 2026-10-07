@@ -2,7 +2,7 @@
 
 This page describes how the repository launches and closes a PS5 title from a
 development PC, without selecting it with a controller. It is the mechanism
-behind [`Invoke-Ps5Cycle.ps1`](../scripts/Invoke-Ps5Cycle.ps1) and can be used on
+behind [`ps5-cycle.sh`](../scripts/ps5-cycle.sh) and can be used on
 its own.
 
 ## How it works
@@ -62,10 +62,10 @@ The script prints the path of the built ELF and exits.
 
 ```text
 close title  →  upload new build (FTP)  →  wait for ShadowMount registration
-             →  launch title  →  observe (klog, screenshots)  →  close title
+             →  launch title  →  observe (klog, app log)  →  close title
 ```
 
-`Invoke-Ps5Cycle.ps1` implements this loop, including hash verification of a
+`ps5-cycle.sh` implements this loop, including hash verification of a
 pre-built image, waiting for the ShadowMount `installed game` or `mount.lnk`
 event, capturing klog from the moment of launch, and confirming the ShadowMount
 `runtime layers released` event after the close.

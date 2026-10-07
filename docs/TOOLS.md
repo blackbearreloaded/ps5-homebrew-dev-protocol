@@ -8,17 +8,18 @@ Closed optional ports do not fail a run unless the experiment declared them.
 | FTP/ftpsrv | PS5 TCP `2121` | Atomic deployment and authorized evidence retrieval. Verify bytes; reachability is not registration. |
 | klog | PS5 TCP `3232` | Primary loader/kernel/system evidence. Save the stream to disk. Do not substitute a transient/source port such as `40972`. Silence alone is not a kernel panic. |
 | elfldr/shsrv | PS5 TCP `9021` | Receives the title-aware launch/close controllers ([CONTROLLERS.md](CONTROLLERS.md)). Transport success is not app success. |
+| Sandbox mounts | FTP `/mnt/sandbox` | A running title has a `<TITLE>_*` entry: the state check that needs no input (`ps5-console.py state`). |
+| Error records | FTP `/system_data/priv/error/history` | One JSON file per system error. Compare the newest before and after a run (`ps5-console.py errors`). |
 | ShadowMount Plus | FTP `/data/shadowmount/debug.log` | Registration, mount, start, crash, stop, kstuff, and release lifecycle. Query by exact title. |
 | kstuff-lite | No service port | Execution environment. Do not change it with the app/runtime in the same experiment. |
 | websrv | PS5 TCP `8080` when used | Optional HTTP/hbldr service or liveness signal. |
 | MemDBG | PS5 TCP `9020` when used | Optional process/module/memory view. Start read-only; writes, stops, and breakpoints require a separate experiment. |
 | PS5-Debug-NG | PS5 TCP `744` (typical) | Optional independent exception/process evidence. Attaching can alter timing. |
-| Chiaki | Remote Play | Visual evidence and bounded input to one owned process/window. See [CHIAKI_INPUT.md](CHIAKI_INPUT.md). |
 | IDA + PS5 plugin/MCP | Offline | Static hypotheses from hashed inputs. Decompiled code is inference, not hardware proof. |
 | Checkpoint receiver | PC TCP port chosen by the project (for example `8767`) | Ordered app-owned HTTP stages. Verify the listening PID and use a run-specific path. |
 
 Use WSL for probes, FTP, hashing, controller traffic, and log filtering. Use
-Windows only for required GUI tools such as Chiaki, IDA, or ShareX.
+Windows only for required GUI tools such as IDA.
 
 Useful bounded commands:
 
@@ -38,7 +39,10 @@ breakpoints can change timing, memory layout, and process state.
 
 | Script | Lock owner |
 | --- | --- |
-| `Invoke-Ps5Cycle.ps1` | Caller; runs one deploy/launch/capture/close cycle. |
+| `Invoke-Ps5Cycle.ps1` | Caller. Legacy Windows cycle that captures screenshots through chiaki-ng Remote Play; kept for projects that still call it. New work uses `ps5-cycle.sh`. |
+| `ps5-cycle.sh` | Script acquires and releases the lock; one cycle from WSL or Linux: close, verified install, settle, launch, logs. |
+| `ps5-console.py` | None needed: `state`, `errors` and `fetch` only read; `install` refuses a running title. |
+| `freeze-candidate.sh` | None: local only. Copies a built folder and writes its `SHA256SUMS`. |
 | `send-controller.sh` | Caller; launches or closes one exact title. |
 | `Remove-Ps5Experiments.ps1` | Caller; removes only explicitly named experiments. |
 | `Get-Ps5DownloadData.ps1` | Script acquires and releases the lock. |
@@ -50,8 +54,11 @@ Common environment variables:
 
 | Variable | Used by | Meaning |
 | --- | --- | --- |
-| `PS5_HOST` | All PowerShell helpers | Console address when `-Ps5Host` is omitted |
-| `CHIAKI_PROFILE` | `Invoke-Ps5Cycle.ps1` | chiaki-ng registered console nickname |
+| `PS5_HOST` | All PowerShell helpers, `ps5-cycle.sh`, `ps5-console.py` | Console address when `-Ps5Host` is omitted |
+| `PS5_LOCK` | `ps5-cycle.sh` | Lock file shared by everyone who uses that console |
+| `PS5_SETTLE`, `PS5_RUN`, `PS5_LAUNCH`, `PS5_CLOSE` | `ps5-cycle.sh` | Seconds to watch after the upload (130), seconds to run (45), `0` to install only, `1` to close after the run |
+| `PS5_FTP_PORT`, `PS5_FTP_USER`, `PS5_FTP_PASSWORD`, `PS5_INSTALL_ROOT` | `ps5-console.py` | FTP endpoint and the folder titles are installed under (`/data/homebrew`) |
+| `CHIAKI_PROFILE` | `Invoke-Ps5Cycle.ps1` (legacy) | chiaki-ng registered console nickname |
 | `PS5_PROTECTED_TITLES` | `Remove-Ps5Experiments.ps1` | Comma-separated title IDs that must never be removed |
 | `PS5_PAYLOAD_SDK` | `send-controller.sh` | PS5 Payload SDK root (default `/opt/ps5-payload-sdk`) |
 | `PS5_CONTROLLER_COMPILE_ONLY` | `send-controller.sh` | `1` builds the controller without sending it |

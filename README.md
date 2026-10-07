@@ -36,9 +36,9 @@ scripts/send-controller.sh close  PPSA99999 <ps5-ip> 9021
 scripts/send-controller.sh launch PPSA99999 <ps5-ip> 9021
 ```
 
-[`Invoke-Ps5Cycle.ps1`](scripts/Invoke-Ps5Cycle.ps1) runs the full
-close → upload → wait for registration → launch → observe → close cycle and
-writes a result record. See [docs/CONTROLLERS.md](docs/CONTROLLERS.md) for
+[`ps5-cycle.sh`](scripts/ps5-cycle.sh) runs the full
+lock → close → verified install → settle → launch → collect logs → unlock
+cycle, one line per step. See [docs/CONTROLLERS.md](docs/CONTROLLERS.md) for
 details, exit codes, and safe-shutdown guidance.
 
 ## Requirements
@@ -57,32 +57,36 @@ On the development PC:
 - Linux or Windows with WSL, `bash`, `nc` (netcat), and `curl`;
 - the [PS5 Payload SDK](https://github.com/ps5-payload-dev/sdk) (for
   `prospero-clang`);
-- for the managed cycle: Windows PowerShell 5.1 or PowerShell 7 and
-  [chiaki-ng](https://github.com/streetpea/chiaki-ng) with a registered
-  Remote Play profile.
+- for the managed cycle: WSL or Linux with `bash`, `python3` and `nc`.
+
+Remote Play is not needed. Earlier versions watched the console through chiaki-ng
+to take screenshots; pictures drawn by a PC build of the app, the app's own log
+and a person's eyes answer the same questions without it
+([Fast console cycles](docs/FAST_CYCLES.md)). The Windows cycle that used it,
+`Invoke-Ps5Cycle.ps1`, is kept only for projects that still call it.
 
 ## Quick start
 
 1. Set your environment once per shell:
 
-   ```powershell
-   $env:PS5_HOST = '192.0.2.10'         # your console's LAN address
-   $env:CHIAKI_PROFILE = 'MyConsole'     # chiaki-ng registered console nickname
+   ```bash
+   export PS5_HOST=192.0.2.10                    # your console's LAN address
+   export PS5_LOCK=/path/shared/lock-console.txt # one lock file per console
    ```
 
-2. Run one managed cycle against a built app directory:
+2. Freeze the built app folder, then run one cycle with it:
 
-   ```powershell
-   .\scripts\Invoke-Ps5Cycle.ps1 `
-     -TitleId PPSA99999 `
-     -AppDirectory C:\path\to\dist\PPSA99999
+   ```bash
+   scripts/freeze-candidate.sh dist/PPSA99999 ~/candidates/first-run
+   scripts/ps5-cycle.sh PPSA99999 ~/candidates/first-run/PPSA99999 \
+       /data/shadowmount/debug.log
    ```
 
-3. Read the outcome (`entered-eboot`, `loader-error`, `runtime-crash-*`, or
-   `inconclusive`) and the evidence written under `results/`.
+3. Read the lines it prints (state before and after, install and settle checks,
+   error records) and the logs it saved under `results/`.
 
-Every parameter can also be passed explicitly (`-Ps5Host`, `-ChiakiNickname`,
-`-FtpPort`, and so on); run `Get-Help .\scripts\Invoke-Ps5Cycle.ps1 -Full`.
+`PS5_LAUNCH=0` installs and verifies without launching; the other switches are
+listed at the top of the script and in [Tools](docs/TOOLS.md).
 
 ## The protocol in brief
 
@@ -115,12 +119,12 @@ The full procedure is in the [runbook](docs/RUNBOOK.md).
 | --- | --- |
 | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | The protocol: one bounded development or validation case |
 | [`docs/CONTROLLERS.md`](docs/CONTROLLERS.md) | Controller-free launch and close |
+| [`docs/FAST_CYCLES.md`](docs/FAST_CYCLES.md) | Getting more from each console launch: host checks, frozen candidates, the one-command cycle, logs |
 | [`docs/TOOLS.md`](docs/TOOLS.md) | Console services, debuggers, and helper scripts |
-| [`docs/CHIAKI_INPUT.md`](docs/CHIAKI_INPUT.md) | Remote Play observation, automated input, screenshots, audio |
 | [`docs/PROJECT_PLAN_TEMPLATE.md`](docs/PROJECT_PLAN_TEMPLATE.md) | Template for a new project plan |
 | [`docs/HANDOFF_TEMPLATE.md`](docs/HANDOFF_TEMPLATE.md) | Template for handing work to another developer or agent |
 | [`scripts/`](scripts) | Managed cycle, controllers, and console helpers |
-| [`examples/iptv/`](examples/iptv) | An application-specific wrapper with fixtures and receipt validation |
+| [`examples/iptv/`](examples/iptv) | An application-specific wrapper with fixtures and receipt validation, built on the legacy Windows cycle |
 | [`scripts/readme-footer/`](scripts/readme-footer) | Generator for the standard footer used across BlackBearReloaded repositories |
 | [`AGENTS.md`](AGENTS.md) | Instructions for coding agents |
 | `results/` | Local evidence output (ignored by Git) |
