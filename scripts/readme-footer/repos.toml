@@ -75,6 +75,9 @@ trademarks = " ATRAC9 is a trademark of Sony Group Corporation."
 releases = true
 trademarks = " AMD, FidelityFX and FSR are trademarks of Advanced Micro Devices, Inc., which does not endorse this project."
 
+[repos.ps5-helixsr]
+trademarks = " NVIDIA and DLSS are trademarks of NVIDIA Corporation. AMD, FidelityFX and FSR are trademarks of Advanced Micro Devices, Inc. Neither company endorses this project."
+
 [repos.ps5-gpu-research]
 sdk = "thanks"
 trademarks = " OpenGL is a registered trademark of Hewlett Packard Enterprise, used by permission by Khronos. Vulkan is a registered trademark of the Khronos Group Inc."
