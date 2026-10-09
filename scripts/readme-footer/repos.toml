@@ -69,21 +69,12 @@ releases = true
 risk = false
 trademarks = " ATRAC9 is a trademark of Sony Group Corporation."
 
-[repos.ps5-audio-decoding-research]
-
 [repos.ps5-fsr4]
 releases = true
 trademarks = " AMD, FidelityFX and FSR are trademarks of Advanced Micro Devices, Inc., which does not endorse this project."
 
 [repos.ps5-helixsr]
 trademarks = " NVIDIA and DLSS are trademarks of NVIDIA Corporation. AMD, FidelityFX and FSR are trademarks of Advanced Micro Devices, Inc. Neither company endorses this project."
-
-[repos.ps5-gpu-research]
-sdk = "thanks"
-trademarks = " OpenGL is a registered trademark of Hewlett Packard Enterprise, used by permission by Khronos. Vulkan is a registered trademark of the Khronos Group Inc."
-
-[repos.ps5-hardware-video-decoding-research]
-sdk = "thanks"
 
 [repos.ps5-homebrew-catalog]
 sdk = "thanks"
@@ -94,10 +85,6 @@ license_extra = "Each listed app is distributed by its own developer under the l
 
 [repos.ps5-native-app-boilerplate]
 releases = true
-
-[repos.ps5-native-gamepad-input-research]
-sdk = "thanks"
-trademarks = " DualSense is a trademark of Sony Interactive Entertainment Inc."
 
 [repos.ps5-opengl]
 releases = true
